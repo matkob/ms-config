@@ -16,10 +16,11 @@ class MsConfigSuite extends AnyFlatSpec with Matchers {
       c => c.focus(_.value)
 
     given Semigroup[Map[String, String]] = (a, b) => a ++ b
+    given Conversion[String, String] = identity
 
     val composed = ComposedConfig[Map[String, String], SomeClass](config)
-      .withCliOverride("test.value.path", focusFunc, identity)
-      .withEnvOverride("TEST_ENV", focusFunc, identity)
+      .withCliOverride("test.value.path", focusFunc)
+      .withEnvOverride("TEST_ENV", focusFunc)
       .withConfigOverride(Map("test" -> "newValue"))
 
     val result = composed.compile(c => SomeClass(c("test")))

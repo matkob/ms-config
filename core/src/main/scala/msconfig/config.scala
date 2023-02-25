@@ -17,31 +17,28 @@ case class ComposedConfig[Config, Clazz](
   }
 }
 
-type LazyFocus[T, V]     = T => AppliedLens[T, V]
-type StringConversion[V] = String => V
+type LazyFocus[T, V] = T => AppliedLens[T, V]
 
 extension [Config, Clazz](config: ComposedConfig[Config, Clazz]) {
   def withCliOverride[T](
       name: String,
-      focus: LazyFocus[Clazz, T],
-      conversion: StringConversion[T]
-  ): ComposedConfig[Config, Clazz] = {
-    config.withStringOverride(name, "cmdParam", focus, conversion)
+      focus: LazyFocus[Clazz, T]
+  )(using Conversion[String, T]): ComposedConfig[Config, Clazz] = {
+    config.withStringOverride(name, "cmdParam", focus)
   }
 
   def withEnvOverride[T](
       name: String,
-      focus: LazyFocus[Clazz, T],
-      conversion: StringConversion[T]
-  ): ComposedConfig[Config, Clazz] =
-    config.withStringOverride(name, "envValue", focus, conversion)
+      focus: LazyFocus[Clazz, T]
+  )(using Conversion[String, T]): ComposedConfig[Config, Clazz] =
+    config.withStringOverride(name, "envValue", focus)
 
   def withStringOverride[T](
       name: String,
       value: String,
-      focus: LazyFocus[Clazz, T],
-      conversion: StringConversion[T]
-  ) = config.withOverride(focus, conversion(value))
+      focus: LazyFocus[Clazz, T]
+  )(using Conversion[String, T]): ComposedConfig[Config, Clazz] =
+    config.withOverride(focus, value)
 
   def withConfigOverride(cfg: Config)(using
       Semigroup[Config]
