@@ -15,60 +15,63 @@ trait EnvVariables {
 
 type LazyFocus[T, V] = T => AppliedLens[T, V]
 
-class ComposedConfig[Config, Clazz](
+class ComposedConfig[Config, Product](
     config: Config,
-    // TODO: allow for mixed config, value override order, zip with index or different impl
-    configOverrides: List[Config => Config] = Nil,
-    valueOverrides: List[Clazz => Clazz] = Nil
+    configOverrides: Seq[Config => Config] = Seq.empty,
+    productOverrides: Seq[Product => Product] = Seq.empty
 ) {
 
-  def compile(decoder: Config => Clazz): Clazz = {
+  def compile(decoder: Config => Product): Product = {
     val cfg = configOverrides.foldLeft(config)((acc, func) => func(acc))
-    valueOverrides.foldLeft(decoder(cfg))((acc, func) => func(acc))
+    productOverrides.foldLeft(decoder(cfg))((acc, func) => func(acc))
   }
 
-  def withCliOverride[T](
+  def withCliOverride[Replacement](
       name: String,
-      focus: LazyFocus[Clazz, T]
+      focus: LazyFocus[Product, Replacement]
   )(using
-      c: Conversion[String, T],
+      c: Conversion[String, Replacement],
       cmd: CmdParameters
-  ): ComposedConfig[Config, Clazz] = {
+  ): ComposedConfig[Config, Product] = {
     cmd.get(name) match
       case None        => ???
       case Some(value) => withStringOverride(value, focus)
   }
 
-  def withEnvOverride[T](
+  def withEnvOverride[Replacement](
       name: String,
-      focus: LazyFocus[Clazz, T]
+      focus: LazyFocus[Product, Replacement]
   )(using
-      c: Conversion[String, T],
+      c: Conversion[String, Replacement],
       env: EnvVariables
-  ): ComposedConfig[Config, Clazz] = {
+  ): ComposedConfig[Config, Product] = {
     env.get(name) match
       case None        => ???
       case Some(value) => withStringOverride(value, focus)
   }
 
-  def withStringOverride[T](
+  def withStringOverride[Replacement](
       value: String,
-      focus: LazyFocus[Clazz, T]
-  )(using Conversion[String, T]): ComposedConfig[Config, Clazz] =
+      focus: LazyFocus[Product, Replacement]
+  )(using Conversion[String, Replacement]): ComposedConfig[Config, Product] =
     withOverride(focus, value)
 
   def withConfigOverride(cfg: Config)(using
       Semigroup[Config]
-  ): ComposedConfig[Config, Clazz] =
-    ComposedConfig(config, configOverrides :+ (c => c |+| cfg), valueOverrides)
+  ): ComposedConfig[Config, Product] =
+    ComposedConfig(
+      config,
+      configOverrides :+ (c => c |+| cfg),
+      productOverrides
+    )
 
-  def withOverride[T](
-      focus: LazyFocus[Clazz, T],
-      value: T
-  ): ComposedConfig[Config, Clazz] =
+  def withOverride[Replacement](
+      focus: LazyFocus[Product, Replacement],
+      value: Replacement
+  ): ComposedConfig[Config, Product] =
     ComposedConfig(
       config,
       configOverrides,
-      valueOverrides :+ (c => focus(c).replace(value))
+      productOverrides :+ (c => focus(c).replace(value))
     )
 }
