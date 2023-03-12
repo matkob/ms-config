@@ -8,11 +8,11 @@ import cats.Applicative
 
 case class OpenConfig[Config](config: Config, overrides: Seq[Config => Config] = Seq.empty) {
 
-  def compile: OpenConfig[Config] = 
+  def compile: OpenConfig[Config] =
     OpenConfig(overrides.foldLeft(config)((acc, func) => func(acc)))
 
   def value[Product](using c: Conversion[Config, Product]): OpenValue[Product] =
-    OpenValue(c(compile.config))
+    OpenValue(compile.config)
 
   def valueF[F[_]: Applicative, Product](using c: Conversion[Config, F[Product]]): F[OpenValue[Product]] =
     c(compile.config).map(OpenValue(_))
@@ -22,5 +22,5 @@ case class OpenConfig[Config](config: Config, overrides: Seq[Config => Config] =
 
 }
 
-given [Config](using Semigroup[Config]): Semigroup[OpenConfig[Config]] = 
+given [Config](using Semigroup[Config]): Semigroup[OpenConfig[Config]] =
   (a, b) => OpenConfig(a.config |+| b.config, a.overrides |+| b.overrides)

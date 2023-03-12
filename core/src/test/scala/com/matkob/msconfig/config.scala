@@ -78,8 +78,8 @@ class OpenConfigSuite extends AnyFlatSpec with Matchers with OptionValues {
     val initial   = Map("test" -> "value")
     val newValues = Map("test" -> "new value")
 
-    val left = OpenConfig[Map[String, String]](initial).withConfigOverride(Map.empty)
-    val right = OpenConfig[Map[String, String]](newValues).withConfigOverride(Map("1" -> "2"))
+    val left     = OpenConfig[Map[String, String]](initial).withConfigOverride(Map.empty)
+    val right    = OpenConfig[Map[String, String]](newValues).withConfigOverride(Map("1" -> "2"))
     val combined = left |+| right
 
     combined.overrides should have size 2
